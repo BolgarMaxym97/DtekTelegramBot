@@ -62,8 +62,8 @@ exports.handler = async (event) => {
         },
     };
 
-    const botToken = '5449209865:AAFx8tBgexukAMkyjJtvL4PbetUuuwyZ-Po';
-    const chatId = -1001539484685;
+    const botToken = null;
+    const chatId = null;
 
     return new Promise((resolve, reject) => {
         const req = https.request(options, res => {

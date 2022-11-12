@@ -20,6 +20,7 @@ const weekDaysMapping = {
 
 const currentDay = new Date().getDay();
 const currentHours = new Date().getHours() + 2;
+const currentMinutes = new Date().getMinutes();
 
 const getMessageDaily = data => {
     let message = "Графік відключень %0A";
@@ -36,7 +37,7 @@ const getMessageDaily = data => {
 };
 
 const getMessageHourly = data => {
-    const todaysSchedule = data[currentDay]
+    const todaysSchedule = data[+weekDaysMapping[+currentDay]]
 
     let message = "";
 
@@ -58,12 +59,12 @@ exports.handler = async (event) => {
         'path': '/schedule-turn-off-electricity',
         'headers': {
             'accept': 'text/html,application/xhtml+xml',
-            'cookie': 'incap_ses_768_2183478=GmV1dkz1VGf6n39IGHyoCmMOaGMAAAAAyhvbD7ffSky4ppumKhKmYw==; yasno_session=eyJpdiI6InVMdlF3VFdLRnVNSDRPN1ZPVWdzb2c9PSIsInZhbHVlIjoiUXkrRk5qcEppd0d2dUwrKzY0Zlk1U2FcL1MwdEJma25Va1RuZk1cLzJcL2QreVV5Z1Y0OWNCNHJ5MmRsNlpacEJPdVZ3NmpJdlNGUXczN2xpaDBkTFAza1k2MDBFUjdUMVhHZHVBajZtZVFISFVJdGtueWRMUW9UTHRlZWU0U1IycWciLCJtYWMiOiJkODhlMmZiYjliNTIxNWIzZGM2YzlmNTg0ZjI1NjA4YzI1NzUzYTFlODA4ODVkMGM0MjliNDgyYzFmMjBmYWYzIn0%3D;',
+            'cookie': 'incap_ses_763_2183478=tBQ7WTf0AUt60IFgNrmWCsvHb2MAAAAAhS48J%2F38oY83tUyaD1L%2FGw%3D%3D; yasno_session=eyJpdiI6IkdUMkJ6c2hkaEJnVjBzSVFWVld0TWc9PSIsInZhbHVlIjoiWGJpbWRUWkU3SUNxV2Y0Z2FoamQzQUVxVWhGRUR0M2FTSEVZeEF5SU50dEs2RGROdXloQkREazF1N3IzZjh2YjUxRFBISENtOXFEMVhTaEd2SVJSYWtqb3BMUHpqVjk4QXRDOUpEUlNadjF2RWhaWHlPNkFSblE0SlhKSWk2V3ciLCJtYWMiOiI4ZjY5MWE3NDQ3NjE3N2U4Njk3YmYzODdkYzkzM2E2ODQxNjBlYmM4OTQ5YTY0YTQ4ZmY2YjM4MzU5NzU4OGRkIn0%3D;',
         },
     };
 
-    const botToken = null;
-    const chatId = null;
+    const botToken = '5449209865:AAFx8tBgexukAMkyjJtvL4PbetUuuwyZ-Po';
+    const chatId = -1001539484685;
 
     return new Promise((resolve, reject) => {
         const req = https.request(options, res => {
@@ -82,7 +83,7 @@ exports.handler = async (event) => {
                 const json = JSON.parse(foundData.replace(/document.data\s?=\s?/, ''));
 
                 return new Promise(function (resolve, reject) {
-                    const message = currentHours === 10 ? getMessageDaily(json.components[0].schedule.group_1) : getMessageHourly(json.components[0].schedule.group_1);
+                    const message = currentHours === 10 && currentMinutes < 30 ? getMessageDaily(json.components[0].schedule ? json.components[0].schedule.group_1 : json.components[1].schedule.group_1) : getMessageHourly(json.components[0].schedule ? json.components[0].schedule.group_1 : json.components[1].schedule.group_1);
 
                     if (message.length !== 0) {
                         https.get(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&parse_mode=HTML&text=${message}`, res => {

@@ -1,3 +1,11 @@
+const GROUPS_CHATS = {
+    1: null,
+    2: null,
+    3: null,
+};
+
+const botToken = '';
+
 const weekDays = {
     0: 'Понеділок',
     1: 'Вівторок',
@@ -23,13 +31,20 @@ const currentHours = new Date().getHours() + 2;
 const currentMinutes = new Date().getMinutes();
 
 const getMessageDaily = data => {
-    let message = "Графік відключень %0A";
+    let message = "<b>💡Графік відключень💡</b> %0A";
+
+    message += '⚠️ - можливе відключення; %0A'
+    message += '🚫 - eлектроенергії немає; %0A'
 
     data.map((schedule, day) => {
         const isDayMatched = +day === +weekDaysMapping[+currentDay];
-        message += "%0A" + (isDayMatched ? "✓" : "") + weekDays[day] + ': ';
+        if (!isDayMatched && +currentDay !== 1) {
+            return;
+        }
+        const isMatchedDaySymbol = (isDayMatched ? "✅" : "");
+        message += "%0A" + isMatchedDaySymbol + `<b>${weekDays[day]}</b>` + isMatchedDaySymbol + ': ';
         schedule.map(timeData => {
-            message += `з ${timeData.start} по ${timeData.end} | `;
+            message += `%0Aз ${timeData.start} по ${timeData.end} ${timeData.type === "DEFINITE_OUTAGE" ? '🚫' : '⚠️'}`;
         });
     });
 
@@ -43,11 +58,16 @@ const getMessageHourly = data => {
 
     todaysSchedule.map(item => {
         if (item.start === currentHours + 1) {
-            message = `Не буде світла з ${item.start} по ${item.end}`;
+            message = `${item.type === "DEFINITE_OUTAGE" ? 'Не' : 'Можливо не'} буде eлектроенергії з ${item.start} по ${item.end}`;
         }
     });
 
     return message;
+};
+
+const getSchedule = (json, groupId) => {
+    const schedule = json.components[0].schedule || json.components[1].schedule;
+    return schedule.kiev[`group_${groupId}`];
 };
 
 exports.handler = async (event) => {
@@ -63,8 +83,6 @@ exports.handler = async (event) => {
         },
     };
 
-    const botToken = '5449209865:AAFx8tBgexukAMkyjJtvL4PbetUuuwyZ-Po';
-    const chatId = -1001539484685;
 
     return new Promise((resolve, reject) => {
         const req = https.request(options, res => {
@@ -81,19 +99,29 @@ exports.handler = async (event) => {
                     return;
                 }
                 const json = JSON.parse(foundData.replace(/document.data\s?=\s?/, ''));
+                const isDailyMessage = currentHours === 10 && currentMinutes < 30;
+                const promises = [];
 
-                return new Promise(function (resolve, reject) {
-                    const message = currentHours === 10 && currentMinutes < 30 ? getMessageDaily(json.components[0].schedule ? json.components[0].schedule.group_1 : json.components[1].schedule.group_1) : getMessageHourly(json.components[0].schedule ? json.components[0].schedule.group_1 : json.components[1].schedule.group_1);
+                Object.values(GROUPS_CHATS).map((chatId, index) => {
+                    const groupId = Object.keys(GROUPS_CHATS)[index];
 
-                    if (message.length !== 0) {
-                        https.get(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&parse_mode=HTML&text=${message}`, res => {
-                            resolve(res.statusCode);
-                        }).on('error', (e) => {
-                            reject(Error(e));
-                        })
-                    }
+                    promises.push(new Promise(function (resolve, reject) {
+                        const schedule = getSchedule(json, groupId);
+                        const message = isDailyMessage ? getMessageDaily(schedule) : getMessageHourly(schedule);
 
-                })
+                        if (message.length !== 0) {
+                            https.get(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&parse_mode=html&text=${message}`, res => {
+                                resolve(res.statusCode);
+                            }).on('error', (e) => {
+                                reject(Error(e));
+                            })
+                        }
+
+                    }));
+                });
+
+                return Promise.all(promises);
+
             });
 
             res.on("error", error => {
@@ -105,3 +133,5 @@ exports.handler = async (event) => {
     });
 
 };
+
+exports.handler({});

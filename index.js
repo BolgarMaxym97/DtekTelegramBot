@@ -58,7 +58,7 @@ const getMessageHourly = data => {
 
     todaysSchedule.map(item => {
         if (item.start === currentHours + 1) {
-            message = `${item.type === "DEFINITE_OUTAGE" ? 'Не' : 'Можливо не'} буде eлектроенергії з ${item.start} по ${item.end}`;
+            message = `${item.type === "DEFINITE_OUTAGE" ? '🚫Не' : '⚠️Можливо не'} буде eлектроенергії з ${item.start} по ${item.end}`;
         }
     });
 

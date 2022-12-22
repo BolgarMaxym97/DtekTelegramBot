@@ -66,7 +66,13 @@ const getMessageHourly = data => {
 };
 
 const getSchedule = (json, groupId) => {
-    const schedule = json.components[0].schedule || json.components[1].schedule;
+    let schedule = null;
+
+    json.components.map(component => {
+        if (component.schedule) {
+            schedule = component.schedule
+        }
+    });
     return schedule.kiev[`group_${groupId}`];
 };
 
